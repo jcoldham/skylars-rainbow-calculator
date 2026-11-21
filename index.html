@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skylar's Rainbow Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #3a2464;
+    --panel: #ffffffee;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "Fredoka", "Comic Sans MS", system-ui, sans-serif;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: linear-gradient(120deg, #ff6ec4, #7873f5, #4ade80, #facc15, #fb7185);
+    background-size: 400% 400%;
+    animation: rainbow 14s ease infinite;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @keyframes rainbow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Floating emoji in the background */
+  .floater {
+    position: fixed;
+    bottom: -60px;
+    font-size: 32px;
+    pointer-events: none;
+    animation: floatUp linear forwards;
+    opacity: .85;
+    z-index: 0;
+  }
+  @keyframes floatUp {
+    to { transform: translateY(-115vh) rotate(360deg); }
+  }
+
+  .calc {
+    position: relative;
+    z-index: 1;
+    width: min(380px, calc(100vw - 32px));
+    padding: 20px;
+    border-radius: 36px;
+    background: var(--panel);
+    box-shadow: 0 20px 50px #3a246455, 0 0 0 6px #ffffff88;
+    animation: popIn .6s cubic-bezier(.2, 1.6, .4, 1);
+  }
+  @keyframes popIn {
+    from { transform: scale(.6) rotate(-6deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+  }
+
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .title {
+    flex: 1;
+    padding: 0 8px;
+    text-align: center;
+    line-height: 1.15;
+    font-size: 21px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #ff3d9a, #8b5cf6, #06b6d4, #22c55e, #f59e0b);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .face {
+    font-size: 40px;
+    line-height: 1;
+    display: inline-block;
+    transition: transform .2s;
+  }
+  .face.bounce { animation: faceBounce .5s; }
+  @keyframes faceBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    40% { transform: translateY(-12px) scale(1.25) rotate(-10deg); }
+    70% { transform: translateY(0) scale(.95) rotate(6deg); }
+  }
+  .mute {
+    border: none;
+    background: #f3e8ff;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    cursor: pointer;
+  }
+
+  .display {
+    background: linear-gradient(135deg, #fdf4ff, #e0f2fe);
+    border-radius: 24px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    text-align: right;
+    box-shadow: inset 0 4px 10px #3a246422;
+    min-height: 104px;
+    overflow: hidden;
+  }
+  .expr {
+    font-size: 20px;
+    min-height: 26px;
+    color: #7c6aa8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    direction: rtl; /* clip from the left so the newest input stays visible */
+  }
+  .main {
+    font-size: 48px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: font-size .15s;
+  }
+  .main.small { font-size: 34px; }
+  .main.tiny { font-size: 24px; }
+  .main.pop { animation: pop .45s cubic-bezier(.2, 1.8, .4, 1); }
+  @keyframes pop {
+    from { transform: scale(.5); }
+    to { transform: scale(1); }
+  }
+  .main.shake { animation: shake .5s; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-10px); }
+    40%, 80% { transform: translateX(10px); }
+  }
+
+  .keys {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .key {
+    position: relative;
+    border: none;
+    border-radius: 22px;
+    height: 68px;
+    font-family: inherit;
+    font-size: 30px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    text-shadow: 0 2px 0 #0002;
+    box-shadow: 0 6px 0 var(--shade), 0 10px 16px #0002;
+    background: var(--color);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .key:hover { filter: brightness(1.08); }
+  .key.down {
+    transform: translateY(5px) scale(.94);
+    box-shadow: 0 1px 0 var(--shade), 0 3px 6px #0002;
+  }
+  .key.wide { grid-column: span 2; }
+  .key:focus-visible { outline: 4px solid #3a2464; outline-offset: 2px; }
+
+  .sparkle {
+    position: fixed;
+    pointer-events: none;
+    font-size: 18px;
+    z-index: 5;
+    animation: sparkle .7s ease-out forwards;
+  }
+  @keyframes sparkle {
+    from { transform: translate(0, 0) scale(1); opacity: 1; }
+    to { transform: translate(var(--dx), var(--dy)) scale(.3); opacity: 0; }
+  }
+
+  canvas#confetti {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body, .calc, .face.bounce, .main.pop, .main.shake { animation: none; }
+    .floater, .sparkle { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="calc">
+    <div class="top">
+      <span class="face" id="face">😊</span>
+      <span class="title">Skylar's Rainbow Calculator</span>
+      <button class="mute" id="mute" aria-label="Turn sound off">🔊</button>
+    </div>
+    <div class="display" aria-live="polite">
+      <div class="expr"><span dir="ltr" id="expr"></span></div>
+      <div class="main" id="main">0</div>
+    </div>
+    <div class="keys" id="keys"></div>
+  </div>
+  <canvas id="confetti"></canvas>
+
+<script src="calc.js"></script>
+<script>
+// Respect the computer's "reduce motion" setting
+const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+function reduceMotion() { return motionQuery.matches; }
+
+// ---------- Buttons ----------
+const KEYS = [
+  { label: "C", type: "clear", color: "#ef4444", shade: "#b91c1c", wide: true },
+  { label: "⌫", type: "back", color: "#f97316", shade: "#c2410c" },
+  { label: "÷", type: "op", color: "#8b5cf6", shade: "#6d28d9" },
+  { label: "7", type: "digit", color: "#ec4899", shade: "#be185d" },
+  { label: "8", type: "digit", color: "#f59e0b", shade: "#b45309" },
+  { label: "9", type: "digit", color: "#10b981", shade: "#047857" },
+  { label: "×", type: "op", color: "#8b5cf6", shade: "#6d28d9" },
+  { label: "4", type: "digit", color: "#06b6d4", shade: "#0e7490" },
+  { label: "5", type: "digit", color: "#3b82f6", shade: "#1d4ed8" },
+  { label: "6", type: "digit", color: "#ec4899", shade: "#be185d" },
+  { label: "−", type: "op", color: "#8b5cf6", shade: "#6d28d9" },
+  { label: "1", type: "digit", color: "#f59e0b", shade: "#b45309" },
+  { label: "2", type: "digit", color: "#10b981", shade: "#047857" },
+  { label: "3", type: "digit", color: "#06b6d4", shade: "#0e7490" },
+  { label: "+", type: "op", color: "#8b5cf6", shade: "#6d28d9" },
+  { label: "0", type: "digit", color: "#3b82f6", shade: "#1d4ed8", wide: true },
+  { label: ".", type: "digit", color: "#a855f7", shade: "#7e22ce" },
+  { label: "=", type: "equals", color: "linear-gradient(135deg, #ff3d9a, #facc15)", shade: "#c2410c" },
+];
+
+const keysEl = document.getElementById("keys");
+const buttonsByLabel = {};
+for (const k of KEYS) {
+  const b = document.createElement("button");
+  b.className = "key" + (k.wide ? " wide" : "");
+  b.textContent = k.label;
+  b.style.setProperty("--color", k.color);
+  b.style.setProperty("--shade", k.shade);
+  b.addEventListener("click", () => press(k));
+  keysEl.appendChild(b);
+  buttonsByLabel[k.label] = b;
+}
+
+// ---------- Sounds (made with the Web Audio API, no files needed) ----------
+let audio = null;
+let muted = false;
+function ctx() {
+  if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+  if (audio.state === "suspended") audio.resume();
+  return audio;
+}
+function tone(freq, { dur = 0.18, type = "triangle", vol = 0.25, delay = 0, slideTo = null } = {}) {
+  if (muted) return;
+  const a = ctx();
+  const t = a.currentTime + delay;
+  const osc = a.createOscillator();
+  const gain = a.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(gain).connect(a.destination);
+  osc.start(t);
+  osc.stop(t + dur + 0.05);
+}
+// Each digit plays a note from a happy-sounding scale, so typing makes a tune
+const NOTES = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0];
+const sounds = {
+  digit: (d) => tone(d === "." ? 1046.5 : NOTES[+d], { dur: 0.22 }),
+  op: () => tone(300, { dur: 0.15, type: "square", vol: 0.12, slideTo: 700 }),
+  back: () => tone(600, { dur: 0.12, type: "sine", slideTo: 350 }),
+  clear: () => tone(900, { dur: 0.35, type: "sine", vol: 0.2, slideTo: 120 }),
+  equals: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) =>
+    tone(f, { dur: i === 3 ? 0.5 : 0.16, delay: i * 0.1, vol: 0.22 })),
+  oops: () => {
+    tone(392, { dur: 0.3, type: "sawtooth", vol: 0.12, slideTo: 370 });
+    tone(330, { dur: 0.5, type: "sawtooth", vol: 0.12, delay: 0.32, slideTo: 260 });
+  },
+};
+
+const muteBtn = document.getElementById("mute");
+muteBtn.addEventListener("click", () => {
+  muted = !muted;
+  muteBtn.textContent = muted ? "🔇" : "🔊";
+  muteBtn.setAttribute("aria-label", muted ? "Turn sound on" : "Turn sound off");
+});
+
+// ---------- Connecting the calculator brain (calc.js) to the screen ----------
+const calc = Calc.createCalculator();
+const exprEl = document.getElementById("expr");
+const mainEl = document.getElementById("main");
+const faceEl = document.getElementById("face");
+
+function render() {
+  const { expr, main } = calc.display();
+  exprEl.textContent = expr;
+  mainEl.textContent = main;
+  mainEl.classList.toggle("small", main.length > 9 && main.length <= 13);
+  mainEl.classList.toggle("tiny", main.length > 13);
+}
+
+function setFace(emoji) {
+  faceEl.textContent = emoji;
+  faceEl.classList.remove("bounce");
+  void faceEl.offsetWidth;
+  faceEl.classList.add("bounce");
+}
+
+function animateMain(cls) {
+  mainEl.classList.remove("pop", "shake");
+  void mainEl.offsetWidth;
+  mainEl.classList.add(cls);
+}
+
+// What to play and show for each thing that can happen
+const REACTIONS = {
+  digit: (label) => { sounds.digit(label); setFace("🤔"); },
+  op: () => { sounds.op(); setFace("😮"); },
+  back: () => sounds.back(),
+  clear: () => { sounds.clear(); setFace("😊"); animateMain("pop"); },
+  equals: () => { sounds.equals(); setFace("🤩"); animateMain("pop"); confetti(); },
+  zero: () => { sounds.oops(); setFace("🙈"); animateMain("shake"); },
+  big: () => { sounds.oops(); setFace("🙈"); animateMain("shake"); },
+};
+
+function press(k) {
+  const btn = buttonsByLabel[k.label];
+  btn.classList.add("down");
+  setTimeout(() => btn.classList.remove("down"), 120);
+  sparkles(btn);
+
+  const happened = calc.press(k.label);
+  if (!happened) return;
+  render();
+  REACTIONS[happened](k.label);
+}
+
+// ---------- Keyboard support ----------
+const KEYMAP = { "*": "×", "x": "×", "/": "÷", "-": "−", "+": "+", "Enter": "=", "=": "=",
+  "Backspace": "⌫", "Escape": "C", "c": "C", "C": "C", ".": "." };
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return; // leave browser shortcuts alone
+  const label = /^[0-9]$/.test(e.key) ? e.key : KEYMAP[e.key];
+  if (!label) return;
+  e.preventDefault();
+  press(KEYS.find(k => k.label === label));
+});
+
+// ---------- Sparkles when a button is pressed ----------
+const SPARKS = ["✨", "⭐", "💖", "🌟"];
+function sparkles(btn) {
+  if (reduceMotion()) return;
+  const r = btn.getBoundingClientRect();
+  for (let i = 0; i < 6; i++) {
+    const s = document.createElement("span");
+    s.className = "sparkle";
+    s.textContent = SPARKS[i % SPARKS.length];
+    s.style.left = r.left + r.width / 2 - 9 + "px";
+    s.style.top = r.top + r.height / 2 - 9 + "px";
+    const angle = (Math.PI * 2 * i) / 6 + Math.random() * 0.5;
+    const dist = 40 + Math.random() * 30;
+    s.style.setProperty("--dx", Math.cos(angle) * dist + "px");
+    s.style.setProperty("--dy", Math.sin(angle) * dist + "px");
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 700);
+  }
+}
+
+// ---------- Confetti when you press = ----------
+const canvas = document.getElementById("confetti");
+const c2d = canvas.getContext("2d");
+let pieces = [];
+let animating = false;
+// Draw at the screen's real pixel density so confetti stays crisp
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = innerWidth * dpr;
+  canvas.height = innerHeight * dpr;
+  canvas.style.width = innerWidth + "px";
+  canvas.style.height = innerHeight + "px";
+  c2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener("resize", resize);
+resize();
+const COLORS = ["#ff3d9a", "#facc15", "#22c55e", "#06b6d4", "#8b5cf6", "#f97316"];
+function confetti() {
+  if (reduceMotion()) return;
+  for (let i = 0; i < 140; i++) {
+    pieces.push({
+      x: innerWidth / 2, y: innerHeight / 2,
+      vx: (Math.random() - 0.5) * 16, vy: Math.random() * -16 - 4,
+      size: 6 + Math.random() * 8, color: COLORS[i % COLORS.length],
+      spin: Math.random() * 6, rot: 0, life: 0,
+    });
+  }
+  if (!animating) { animating = true; requestAnimationFrame(tick); }
+}
+function tick() {
+  c2d.clearRect(0, 0, canvas.width, canvas.height);
+  pieces = pieces.filter(p => p.y < innerHeight + 40 && p.life < 240);
+  for (const p of pieces) {
+    p.vy += 0.4; p.vx *= 0.99;
+    p.x += p.vx; p.y += p.vy;
+    p.rot += p.spin * 0.05; p.life++;
+    c2d.save();
+    c2d.translate(p.x, p.y);
+    c2d.rotate(p.rot);
+    c2d.fillStyle = p.color;
+    c2d.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+    c2d.restore();
+  }
+  if (pieces.length) requestAnimationFrame(tick);
+  else { animating = false; c2d.clearRect(0, 0, canvas.width, canvas.height); }
+}
+
+// ---------- Floating emoji background ----------
+const FLOATERS = ["🌈", "⭐", "🦄", "🍭", "🎈", "✨", "💖", "🌸"];
+function spawnFloater() {
+  if (reduceMotion()) return;
+  const f = document.createElement("span");
+  f.className = "floater";
+  f.textContent = FLOATERS[Math.floor(Math.random() * FLOATERS.length)];
+  f.style.left = Math.random() * 100 + "vw";
+  f.style.fontSize = 22 + Math.random() * 26 + "px";
+  f.style.animationDuration = 9 + Math.random() * 8 + "s";
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 18000);
+}
+setInterval(spawnFloater, 1200);
+for (let i = 0; i < 4; i++) setTimeout(spawnFloater, i * 300);
+
+render();
+</script>
+</body>
+</html>

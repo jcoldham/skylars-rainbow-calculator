@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skylar's Rainbow Calculator Tests</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 24px; background: #faf7ff; color: #2d1b4e; }
+  h1 { margin: 0 0 8px; }
+  #summary { font-size: 20px; font-weight: 700; padding: 12px 16px; border-radius: 12px; margin-bottom: 20px; }
+  #summary.pass { background: #dcfce7; color: #166534; }
+  #summary.fail { background: #fee2e2; color: #991b1b; }
+  h2 { font-size: 17px; margin: 20px 0 6px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { padding: 4px 0; }
+  li.fail { color: #b91c1c; font-weight: 600; }
+  .why { display: block; font-weight: 400; font-family: ui-monospace, monospace; font-size: 13px; margin-left: 24px; }
+</style>
+</head>
+<body>
+<h1>🌈 Skylar's Rainbow Calculator tests</h1>
+<p>Open this page in a browser to run every test. Refresh to run them again.</p>
+<div id="summary">Running…</div>
+<div id="results"></div>
+
+<script src="calc.js"></script>
+<script>
+// ---------- A tiny test runner (no installs needed) ----------
+const groups = [];
+function describe(name, fn) { groups.push({ name, tests: [] }); fn(); }
+function test(name, fn) { groups[groups.length - 1].tests.push({ name, fn }); }
+function expectEqual(actual, expected, label = "") {
+  if (!Object.is(actual, expected)) {
+    throw new Error(`${label}expected ${JSON.stringify(expected)} but got ${JSON.stringify(actual)}`);
+  }
+}
+
+// Presses keys on a fresh calculator. Uses easy-to-type stand-ins:
+// * means ×, / means ÷, - means −, < means ⌫ (backspace), C means clear.
+const ALIASES = { "*": "×", "/": "÷", "-": "−", "<": "⌫" };
+function pressKeys(keys, calc = Calc.createCalculator()) {
+  let last;
+  for (const ch of keys) last = calc.press(ALIASES[ch] || ch);
+  return { calc, last, main: calc.display().main, expr: calc.display().expr };
+}
+const answer = (keys) => pressKeys(keys).main;
+
+// ---------- The tests ----------
+describe("Basic math", () => {
+  test("adds", () => expectEqual(answer("2+3="), "5"));
+  test("subtracts", () => expectEqual(answer("9-4="), "5"));
+  test("multiplies", () => expectEqual(answer("6*7="), "42"));
+  test("divides", () => expectEqual(answer("8/2="), "4"));
+  test("divides into a decimal", () => expectEqual(answer("1/4="), "0.25"));
+  test("gives negative answers", () => expectEqual(answer("3-8="), "-5"));
+  test("works with multi-digit numbers", () => expectEqual(answer("123+877="), "1000"));
+});
+
+describe("Order of operations", () => {
+  test("× before +", () => expectEqual(answer("2+3*4="), "14"));
+  test("÷ before −", () => expectEqual(answer("10-6/2="), "7"));
+  test("left to right for + and −", () => expectEqual(answer("10-3-2="), "5"));
+  test("left to right for × and ÷", () => expectEqual(answer("8/4*2="), "4"));
+  test("long mixed calculation", () => expectEqual(answer("2*3+4*5-6/3="), "24"));
+});
+
+describe("Decimals", () => {
+  test("hides floating point noise: 0.1 + 0.2 = 0.3", () => expectEqual(answer("0.1+0.2="), "0.3"));
+  test("a leading . becomes 0.", () => expectEqual(pressKeys(".5").main, "0.5"));
+  test("a second . in the same number is ignored", () => {
+    const r = pressKeys("1.2.3");
+    expectEqual(r.main, "1.23");
+    expectEqual(r.last, "digit");
+  });
+  test("a stray . before an operator doesn't leak into the next number", () =>
+    expectEqual(answer("7+.+3="), "10"));
+  test("1 ÷ 3 is rounded to 12 digits", () => expectEqual(answer("1/3="), "0.333333333333"));
+});
+
+describe("Typing numbers", () => {
+  test("starts by showing 0", () => expectEqual(pressKeys("").main, "0"));
+  test("leading zero is replaced", () => expectEqual(pressKeys("07").main, "7"));
+  test("stops at 12 digits", () => {
+    const r = pressKeys("1234567890123");
+    expectEqual(r.main, "123456789012");
+    expectEqual(r.last, null, "13th digit: ");
+  });
+  test("a digit after = starts a new calculation", () => {
+    const r = pressKeys("2+2=5");
+    expectEqual(r.main, "5");
+    expectEqual(r.expr, "5");
+  });
+});
+
+describe("Operators", () => {
+  test("pressing two operators in a row keeps the last one", () => expectEqual(answer("6+*2="), "12"));
+  test("an operator first starts from 0", () => expectEqual(answer("-5="), "-5"));
+  test("an operator after = keeps going from the answer", () => expectEqual(answer("5+5=*3="), "30"));
+  test("chaining from a negative answer", () => expectEqual(answer("2-5=*2="), "-6"));
+  test("shows the previous number while waiting for the next", () =>
+    expectEqual(pressKeys("12+").main, "12"));
+});
+
+describe("Equals", () => {
+  test("ignored with only one number", () => {
+    const r = pressKeys("5=");
+    expectEqual(r.last, null);
+    expectEqual(r.main, "5");
+  });
+  test("ignores a trailing operator", () => expectEqual(answer("4*5+="), "20"));
+  test("pressing = again does nothing", () => {
+    const r = pressKeys("2+2==");
+    expectEqual(r.last, null);
+    expectEqual(r.main, "4");
+  });
+  test("shows the full sum above the answer", () => expectEqual(pressKeys("12+7=").expr, "12 + 7 ="));
+});
+
+describe("Backspace and clear", () => {
+  test("backspace removes the last digit", () => expectEqual(pressKeys("123<").main, "12"));
+  test("backspace on an operator brings back the number to edit", () => {
+    const r = pressKeys("12+<");
+    expectEqual(r.expr, "12");
+    expectEqual(answer("12+<3="), "123", "then typing 3: ");
+  });
+  test("backspace after = clears everything", () => {
+    const r = pressKeys("2+2=<");
+    expectEqual(r.main, "0");
+    expectEqual(r.expr, "");
+  });
+  test("backspace on an empty calculator is safe", () => expectEqual(pressKeys("<<<").main, "0"));
+  test("backspace removes a huge number whole instead of breaking it", () => {
+    const r = pressKeys("999999999999*999999999999=+<");
+    expectEqual(r.main, "0");
+  });
+  test("backspace never leaves a lone minus sign", () => {
+    const r = pressKeys("2-7=+<<");
+    expectEqual(r.expr, "");
+    expectEqual(answer("2-7=+<<4+1="), "5", "then a new sum: ");
+  });
+  test("C clears everything", () => {
+    const r = pressKeys("12+34C");
+    expectEqual(r.main, "0");
+    expectEqual(r.expr, "");
+    expectEqual(r.last, "clear");
+  });
+});
+
+describe("Oops cases", () => {
+  test("divide by zero shows Oops", () => {
+    const r = pressKeys("7/0=");
+    expectEqual(r.last, "zero");
+    expectEqual(r.main, "Oops! 🙈");
+    expectEqual(r.expr, "Can't divide by zero!");
+  });
+  test("0 ÷ 0 also shows Oops", () => expectEqual(pressKeys("0/0=").last, "zero"));
+  test("zero ÷ a number is fine", () => expectEqual(answer("0/5="), "0"));
+  test("typing after Oops starts fresh", () => expectEqual(answer("7/0=3+4="), "7"));
+  test("an operator after Oops starts from 0", () => expectEqual(answer("7/0=+2="), "2"));
+  test("too-big answers show Oops instead of Infinity", () => {
+    const calc = Calc.createCalculator();
+    let r = pressKeys("999999999999*999999999999=", calc);
+    for (let i = 0; i < 30 && r.last !== "big"; i++) r = pressKeys("*999999999999=", calc);
+    expectEqual(r.last, "big");
+    expectEqual(r.expr, "That number is too big!");
+  });
+});
+
+describe("What each key press reports (drives sounds and faces)", () => {
+  test("digit", () => expectEqual(pressKeys("5").last, "digit"));
+  test("operator", () => expectEqual(pressKeys("5+").last, "op"));
+  test("backspace", () => expectEqual(pressKeys("5<").last, "back"));
+  test("equals", () => expectEqual(pressKeys("5+5=").last, "equals"));
+  test("unknown key is ignored", () => expectEqual(Calc.createCalculator().press("?"), null));
+});
+
+describe("evaluate() and fmt() helpers", () => {
+  test("evaluate handles a single number", () => expectEqual(Calc.evaluate([42]), 42));
+  test("evaluate returns 'zero' for ÷ 0", () => expectEqual(Calc.evaluate([1, "÷", 0]), "zero"));
+  test("evaluate returns 'big' on overflow", () => expectEqual(Calc.evaluate([1e300, "×", 1e300]), "big"));
+  test("fmt shows normal numbers as is", () => expectEqual(Calc.fmt(1234.5), "1234.5"));
+  test("fmt uses e-notation for huge numbers", () => expectEqual(Calc.fmt(1e15), "1.0000e+15"));
+  test("fmt uses e-notation for tiny numbers", () => expectEqual(Calc.fmt(0.0000001), "1.0000e-7"));
+  test("fmt shows 0 plainly", () => expectEqual(Calc.fmt(0), "0"));
+});
+
+// ---------- Run everything and show the results ----------
+let passed = 0, failed = 0;
+const failures = [];
+const resultsEl = document.getElementById("results");
+for (const g of groups) {
+  const h = document.createElement("h2");
+  h.textContent = g.name;
+  const ul = document.createElement("ul");
+  for (const t of g.tests) {
+    const li = document.createElement("li");
+    try {
+      t.fn();
+      passed++;
+      li.textContent = "✅ " + t.name;
+    } catch (err) {
+      failed++;
+      failures.push(`${g.name} › ${t.name}: ${err.message}`);
+      li.className = "fail";
+      li.textContent = "❌ " + t.name;
+      const why = document.createElement("span");
+      why.className = "why";
+      why.textContent = err.message;
+      li.appendChild(why);
+    }
+    ul.appendChild(li);
+  }
+  resultsEl.append(h, ul);
+}
+const summary = document.getElementById("summary");
+summary.textContent = failed ? `${failed} failed, ${passed} passed` : `All ${passed} tests passed 🎉`;
+summary.className = failed ? "fail" : "pass";
+document.title = (failed ? "❌ " : "✅ ") + document.title;
+window.testResults = { passed, failed, failures };
+</script>
+</body>
+</html>

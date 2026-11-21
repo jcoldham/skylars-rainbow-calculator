@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "rainbow-calc",
+      "runtimeExecutable": "pwsh",
+      "runtimeArgs": ["-NoProfile", "-File", ".claude/serve.ps1", "-Root", "."],
+      "port": 8765
+    }
+  ]
+}

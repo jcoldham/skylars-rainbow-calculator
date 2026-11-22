@@ -40,18 +40,20 @@
   }
 
   // Makes a new calculator. press(label) handles one key and returns what happened:
-  // "digit", "op", "back", "clear", "equals", "zero", "big", or null if the key was ignored.
+  // "digit", "op", "percent", "back", "clear", "equals", "zero", "big", or null if the key was ignored.
   // display() returns the two lines of text to show.
   function createCalculator() {
     let tokens = [];   // numbers and operators entered so far, e.g. [7, "+", 3]
     let cur = "";      // the number being typed right now
     let result = null; // last answer, after pressing =
     let error = null;  // "zero" or "big" after a failed =
+    let fromPercent = false; // true right after %, so the next digit starts a new number
 
-    function resetAll() { tokens = []; cur = ""; result = null; error = null; }
+    function resetAll() { tokens = []; cur = ""; result = null; error = null; fromPercent = false; }
 
     function pressDigit(d) {
       if (result !== null || error) resetAll();
+      if (fromPercent) { cur = ""; fromPercent = false; }
       if (d === ".") {
         if (cur.includes(".")) return null;
         cur = cur ? cur + "." : "0.";
@@ -65,8 +67,31 @@
       return "digit";
     }
 
+    // % works like most phone calculators:
+    //   50 %        → 0.5             (just divide by 100)
+    //   200 × 10 %  → 200 × 0.1       (after × or ÷, the same)
+    //   200 + 10 %  → 200 + 20        (after + or −, it means "10 percent of 200")
+    function pressPercent() {
+      if (error) return null;
+      if (result !== null) { tokens = []; cur = String(result); result = null; }
+      if (cur === "") return null; // nothing to turn into a percent yet
+      let value = parseFloat(cur) / 100;
+      const lastOp = tokens[tokens.length - 1];
+      if (lastOp === "+" || lastOp === "−") {
+        // Work out everything before the + or − to find "percent of what"
+        const before = evaluate(tokens.slice(0, -1));
+        if (typeof before === "string") return null;
+        value = before * value;
+      }
+      if (!isFinite(value)) { tokens = []; cur = ""; error = "big"; return "big"; }
+      cur = String(parseFloat(value.toPrecision(12)));
+      fromPercent = true;
+      return "percent";
+    }
+
     function pressOp(op) {
       error = null;
+      fromPercent = false;
       if (result !== null) { tokens = []; cur = String(result); result = null; }
       if (cur === "" || cur === "0.") {
         if (tokens.length && isOp(tokens[tokens.length - 1])) tokens[tokens.length - 1] = op;
@@ -80,7 +105,9 @@
     }
 
     function pressBack() {
+      fromPercent = false;
       if (result !== null || error) resetAll();
+      else if (cur.includes("e")) cur = ""; // a tiny % answer like 1e-7 is removed whole
       else if (cur) cur = cur.slice(0, -1);
       else if (tokens.length) {
         tokens.pop();
@@ -110,6 +137,7 @@
     function press(label) {
       if (/^[0-9.]$/.test(label)) return pressDigit(label);
       if (OPS.includes(label)) return pressOp(label);
+      if (label === "%") return pressPercent();
       if (label === "⌫") return pressBack();
       if (label === "C") { resetAll(); return "clear"; }
       if (label === "=") return pressEquals();

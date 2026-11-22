@@ -8,7 +8,8 @@ A bright, kid-friendly calculator. Number keys play musical notes, buttons squis
 
 Open the live link above on any phone, tablet or computer. Or, from a copy of this folder, double-click `index.html` to open it in a web browser. You don't need to install anything.
 
-- Click the buttons or use the keyboard: number keys, `+ - * /`, **Enter** for =, **Backspace** to delete, **Esc** to clear.
+- Click the buttons or use the keyboard: number keys, `+ - * /`, `%`, **Enter** for =, **Backspace** to delete, **Esc** to clear.
+- The **%** button works like a phone calculator: 50 % gives 0.5, and 200 + 10 % gives 220 (200 plus 10% of 200).
 - The 🔊 button in the corner turns the sound on and off.
 - If Windows has "reduce motion" turned on, the animations turn off.
 

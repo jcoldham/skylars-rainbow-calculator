@@ -146,6 +146,32 @@ describe("Backspace and clear", () => {
   });
 });
 
+describe("Percent", () => {
+  test("% on its own divides by 100", () => expectEqual(pressKeys("50%").main, "0.5"));
+  test("after ×, % is a plain percent: 200 × 10% = 20", () => expectEqual(answer("200*10%="), "20"));
+  test("after ÷, % is a plain percent: 50 ÷ 50% = 100", () => expectEqual(answer("50/50%="), "100"));
+  test("after +, % is a percent of the first number: 200 + 10% = 220", () =>
+    expectEqual(answer("200+10%="), "220"));
+  test("after −, % is a percent of the first number: 80 − 25% = 60", () =>
+    expectEqual(answer("80-25%="), "60"));
+  test("the first number follows × before +: 2 + 3 × 6 + 50% uses 20", () =>
+    expectEqual(answer("2+3*6+50%="), "30"));
+  test("shows the worked-out percent in the sum", () =>
+    expectEqual(pressKeys("200+10%").expr, "200 + 20"));
+  test("% after = works on the answer", () => expectEqual(pressKeys("20+30=%").main, "0.5"));
+  test("a digit after % starts a new number", () => expectEqual(pressKeys("50%7").main, "7"));
+  test("pressing % twice works twice", () => expectEqual(pressKeys("50%%").main, "0.005"));
+  test("% hides floating point noise", () => expectEqual(pressKeys("7%").main, "0.07"));
+  test("% with nothing typed is ignored", () => {
+    expectEqual(pressKeys("%").last, null);
+    expectEqual(pressKeys("5+%").last, null);
+  });
+  test("% after Oops is ignored", () => expectEqual(pressKeys("7/0=%").last, null));
+  test("backspace after % edits the percent", () => expectEqual(pressKeys("25%<").main, "0.2"));
+  test("backspace removes a tiny e-number % answer whole", () =>
+    expectEqual(pressKeys("0.00001%<").main, "0"));
+});
+
 describe("Oops cases", () => {
   test("divide by zero shows Oops", () => {
     const r = pressKeys("7/0=");
@@ -171,6 +197,7 @@ describe("What each key press reports (drives sounds and faces)", () => {
   test("operator", () => expectEqual(pressKeys("5+").last, "op"));
   test("backspace", () => expectEqual(pressKeys("5<").last, "back"));
   test("equals", () => expectEqual(pressKeys("5+5=").last, "equals"));
+  test("percent", () => expectEqual(pressKeys("5%").last, "percent"));
   test("unknown key is ignored", () => expectEqual(Calc.createCalculator().press("?"), null));
 });
 

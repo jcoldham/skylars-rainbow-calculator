@@ -21,9 +21,9 @@ https://jcoldham.github.io/skylars-rainbow-calculator/
 
 - Keep math and key logic in `calc.js` and keep the presentation in `index.html`. Don't put calculator logic in the page.
 - For a behavior change or bug fix in `calc.js`, add or update a test in `tests.html` in the matching `describe` group. Write a failing test first, then make it pass.
-- Tests type keys with stand-ins: `*` for ×, `/` for ÷, `-` for −, `<` for ⌫ and `C` for clear. The calculator itself uses the real symbols (`× ÷ − ⌫`).
-- `press()` returns a result string (`"digit"`, `"op"`, `"back"`, `"clear"`, `"equals"`, `"zero"`, `"big"` or `null`). `index.html` uses these to pick the sounds and faces, so any new outcome must be handled there too.
-- Keep current behavior: × and ÷ are worked out before + and −, answers are rounded to 12 significant digits (so 0.1 + 0.2 shows 0.3), entries are limited to 12 digits, and errors are friendly ("Oops! 🙈") instead of NaN or Infinity.
+- Tests type keys with stand-ins: `*` for ×, `/` for ÷, `-` for −, `<` for ⌫ and `C` for clear (`%` is typed as is). The calculator itself uses the real symbols (`× ÷ − ⌫`).
+- `press()` returns a result string (`"digit"`, `"op"`, `"percent"`, `"back"`, `"clear"`, `"equals"`, `"zero"`, `"big"` or `null`). `index.html` uses these to pick the sounds and faces, so any new outcome must be handled there too.
+- Keep current behavior: × and ÷ are worked out before + and −, answers are rounded to 12 significant digits (so 0.1 + 0.2 shows 0.3), entries are limited to 12 digits, % works phone-style (50 % is 0.5, 200 + 10 % is 220), and errors are friendly ("Oops! 🙈") instead of NaN or Infinity.
 - Don't add dependencies, build tools or a framework. The app must keep working when `index.html` is double-clicked. (The Google Fonts link is fine, since it falls back to other fonts when offline.)
 - Every animation must respect `prefers-reduced-motion` (check `reduceMotion()` in JS, plus the CSS media query). The sound toggle must keep working.
 - The audience is a child. Keep all on-screen text short, friendly and encouraging.
